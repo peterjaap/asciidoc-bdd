@@ -21,7 +21,7 @@ include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-c
 Run the tool like this;
 
 ```
-$ ./asciidoc-bdd /path/to/your/asciidoc/files /path/to/repositories
+$ ./asciidoc-bdd build /path/to/your/asciidoc/files /path/to/repositories
 ```
 
 This tool will then parse the `bdd-` attributes in all `*.adoc` files in the Asciidoc files dir, like this:
