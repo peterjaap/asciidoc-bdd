@@ -14,7 +14,7 @@ Example in Asciidoc;
 ```
 [source,json]
 ----
-include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-commit-msg="Add the composer.json",bdd-tag=chapter-1.0]
+include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-commit-msg="Add the composer.json",bdd-tag=chapter-7.0]
 ----
 ```
 
@@ -56,6 +56,8 @@ Initialized empty Git repository in /path/to/my/repos/todolist/.git/
                                             
 Tag chapter-7.0 created                                           
 ```
+
+You can see the generated repo here; https://github.com/peterjaap/asciidoc-bdd-example
 
 ## Credits
 [Inspired](https://twitter.com/PeterJaap/status/1251486796258652160) by [Fabien Potencier](https://twitter.com/fabot), who talked about _Book Driven Development_ in his book: [Symfony 5: The Fast Track](https://symfony.com/book). You can check out his Github repo for the book here: https://github.com/the-fast-track/book-5.0-1
