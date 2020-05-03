@@ -1,13 +1,13 @@
 # Asciidoc Book Driven Development CLI tool
 
 ## Who is this for?
-This is for book authors who are writing a technical book and want a Github repository for their readers to work along with.
+This is for book authors who are writing a technical book in [Asciidoc](http://asciidoc.org/) and want a Github repository for their readers to work along with.
 
 ## What does it do?
-This tool can read your book (in its Asciidoc source format) and extract file includes according to a certain regex. For instance, you could configure it to extract all PHP files in a certain directory. It can then build up a Github repo using tags and commits. The repository can be rebuilt from the ground up, ensuring a logical processing through the tags.
+This tool can read your book (in its Asciidoc source format) and extract file includes that contain `bdd-` attributes. It can then build up a Github repo with tags and commits. The repository can be rebuilt from the ground up, ensuring a logical order through the tags.
 
 ## Configuration
-You have to use the asciidoc attribute syntax to tell this tool how to process the include.
+You have to use the Asciidoc attribute syntax to tell this tool how to process the include.
 
 Example in Asciidoc;
 
@@ -24,7 +24,7 @@ Run the tool like this;
 $ ./asciidoc-bdd /path/to/your/asciidoc/files /path/to/repositories
 ```
 
-This tool will then parse the `bdd-` attributes in all `*.adoc` files in the asciidoc files dir, like this:
+This tool will then parse the `bdd-` attributes in all `*.adoc` files in the Asciidoc files dir, like this:
 
 ```
 Array                                             
@@ -57,4 +57,4 @@ Tag chapter-7.0 created
 ```
 
 ## Credits
-Inspired by Fabien Potencier, who talked about _Book Driven Development_ in his book: Symfony 5 - The Fast Track. You can check out his Github repo for the book here: https://github.com/the-fast-track/book-5.0-1
+[Inspired](https://twitter.com/PeterJaap/status/1251486796258652160) by [Fabien Potencier](https://twitter.com/fabot), who talked about _Book Driven Development_ in his book: [Symfony 5: The Fast Track](https://symfony.com/book). You can check out his Github repo for the book here: https://github.com/the-fast-track/book-5.0-1
