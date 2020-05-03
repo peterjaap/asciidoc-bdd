@@ -60,9 +60,16 @@ class BuildCommand extends Command
             $gitAction = $includeData['bdd-action'] ?? 'add';
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
             // Process commit messages and tags
-            $this->processCommitMsgTag($includeData);
+            $this->processCommitMsg($includeData);
+            // Process tags
+            $this->processTags($includeData);
             // Wait one second to create unique timestamps
             sleep(1);
+        }
+
+        // Process final tag, forcing creation
+        if (isset($includeData)) {
+            $this->processTags($includeData, true);
         }
 
         return 0;
@@ -158,30 +165,41 @@ class BuildCommand extends Command
 
     /**
      * @param $includeData
+     * @param bool $force
      *
-     * Process commit messages and tags
+     * Process tags
      *
-     * - If identical consecutive commit msgs are found, all includes will be committed under that commit message
-     * - If identical consecutive tags are found, all includes will be under that tag
+     * If identical consecutive tags are found, all includes will be under that tag
      */
-    private function processCommitMsgTag($includeData)
+    private function processTags($includeData, $force = false)
+    {
+        $repoName = $includeData['bdd-repo'];
+        if (($includeData['bdd-tag'] !== $this->lastTag && $this->lastTag !== null) || $force) {
+            // Found tag differs from last; tag previous commits with the last tag
+            $this->executeOnRepo($repoName, ['git','tag','-a',$this->lastTag,'-m',$this->lastTag]);
+            $this->info('Tag ' . $this->lastTag . ' created');
+        }
+        $this->lastTag = $includeData['bdd-tag'];
+    }
+
+    /**
+     * @param $includeData
+     *
+     * Process commit message
+     *
+     * If identical consecutive commit msgs are found, all includes will be committed under that commit message
+     */
+    private function processCommitMsg($includeData)
     {
         $repoName = $includeData['bdd-repo'];
         if ($includeData['bdd-commit-msg'] !== $this->lastCommitMessage) {
-            $this->info('Committing ' . $includeData['bdd-filename'] . ' with commit message ' . $includeData['bdd-commit-msg']);
             // Found commit message differs from last; commit it
+            $this->info('Committing ' . $includeData['bdd-filename'] . ' with commit message ' . $includeData['bdd-commit-msg']);
             $this->executeOnRepo($repoName, ['git','commit','-m',$includeData['bdd-commit-msg']]);
-        }
-
-        if ($includeData['bdd-tag'] !== $this->lastTag) {
-            // Found tag differs from last; tag it
-            $this->executeOnRepo($repoName, ['git','tag','-a',$includeData['bdd-tag'],'-m',$includeData['bdd-tag']]);
-            $this->info('Tag ' . $includeData['bdd-tag'] . ' created');
         }
 
         // Save the last commit-msg and tag in a property for later retrieval
         $this->lastCommitMessage = $includeData['bdd-commit-msg'];
-        $this->lastTag = $includeData['bdd-tag'];
     }
 
 }
