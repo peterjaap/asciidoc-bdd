@@ -1,10 +1,10 @@
 # Asciidoc Book Driven Development CLI tool
 
 ## Who is this for?
-This is for book authors who are writing a technical book in [Asciidoc](http://asciidoc.org/) and want a Github repository for their readers to work along with.
+This is for book authors who are writing a technical book in [Asciidoc](http://asciidoc.org/) and want a Git repository for their readers to work along with.
 
 ## What does it do?
-This tool can read your book (in its Asciidoc source format) and extract file includes that contain `bdd-` attributes. It can then build up a Github repo with tags and commits. The repository can be rebuilt from the ground up, ensuring a logical order through the tags.
+This tool can read your book (in its Asciidoc source format) and extract file includes that contain `bdd-` attributes. It can then build up a Git repo with tags and commits. The repository can be rebuilt from the ground up, ensuring a logical order through the tags.
 
 ## Configuration
 You have to use the Asciidoc attribute syntax to tell this tool how to process the include.
