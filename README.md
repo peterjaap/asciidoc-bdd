@@ -14,7 +14,7 @@ Example in Asciidoc;
 ```
 [source,json]
 ----
-include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-commit-msg="Add the composer.json",bdd-tag=chapter-1.0]
+include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-commit-msg="Add the composer.json",bdd-tag=chapter-7.0]
 ----
 ```
 
