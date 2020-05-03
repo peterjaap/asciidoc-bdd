@@ -163,6 +163,7 @@ class BuildCommand extends Command
         ) {
             // Found tag differs from last; tag it
             $this->executeOnRepo($repoName, ['git','tag','-a',$includeData['bdd-tag'],'-m',$includeData['bdd-tag']]);
+            $this->line('Tag ' . $includeData['bdd-tag'] . ' created');
         }
 
         // Save the last commit-msg and tag in a property for later retrieval
