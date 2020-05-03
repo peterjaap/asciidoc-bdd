@@ -39,7 +39,8 @@ Array
 It will then create a repository called `todolist` in the given repositories path and create commits and tags based on the `bdd-` attributes. The following rules apply;
 
 1. When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit;
-2. When it encounters a number of consecutive identical tags, a tag will be generated for the last commit.
+2. When it encounters a number of consecutive identical tags, a tag will be generated for the last commit;
+3. The default git command is `add`. If you want to remove a file from the Git repo, use `bdd-action=rm`.
 
 Output:
 

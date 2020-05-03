@@ -54,7 +54,8 @@ class BuildCommand extends Command
             // Copy the source file to the Git repository directory
             $this->copySourceToRepo($fileName, $repoName, $includeData);
             // Add the file to the Git repository
-            $this->executeOnRepo($repoName, ['git','add',$includeData['bdd-filename']]);
+            $gitAction = $includeData['bdd-action'] ?: 'add';
+            $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
             // Process commit messages and tags
             $this->processCommitMsgTag($includeData);
         }
