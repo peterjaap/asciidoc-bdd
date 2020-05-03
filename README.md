@@ -36,11 +36,16 @@ Array
 )  
 ```
 
-It will then create a repository called `todolist` in the given repositories path and create commits and tags based on the `bdd-` attributes. The following rules apply;
+It will then create a repository called `todolist` in the given repositories path and create commits and tags based on the `bdd-` attributes. 
 
-1. When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit;
-2. When it encounters a number of consecutive identical tags, a tag will be generated for the last commit;
-3. The default git command is `add`. If you want to remove a file from the Git repo, use `bdd-action=rm`.
+## bdd- attributes
+| Attribute  | Required  | Comment |
+|---|---|---|
+| bdd-repo  | optional  | The repo the include should be committed to. Optional when option `--reponame` is given |
+| bdd-filename  | required  | The filename (including path) in the repo |
+| bdd-commit-msg  | optional  | When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit  |
+| bdd-tag  | optional  |  When it encounters a number of consecutive identical tags, a tag will be generated for the last commit |
+| bdd-action | optional | The default git command is `add`. If you want to remove a file from the Git repo, use `bdd-action=rm` | 
 
 Output:
 

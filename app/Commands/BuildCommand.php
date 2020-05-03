@@ -2,13 +2,12 @@
 
 namespace App\Commands;
 
-use Illuminate\Console\Scheduling\Schedule;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -53,7 +52,7 @@ class BuildCommand extends Command
             $this->createRepo($repoName);
             // Copy the source file to the Git repository directory
             $this->copySourceToRepo($fileName, $repoName, $includeData);
-            // Add the file to the Git repository
+            // Add/remove the file to/from the Git repository
             $gitAction = $includeData['bdd-action'] ?: 'add';
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
             // Process commit messages and tags
@@ -85,6 +84,7 @@ class BuildCommand extends Command
                 $attributes = array_map(function ($attribute) {
                     return trim($attribute, '"');
                 }, $attributes);
+                $attributes['bdd-repo'] = $attributes['bdd-repo'] ?: $this->option('reponame');
                 $data[$includePath] = $attributes;
             }
         }
