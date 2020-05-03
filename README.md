@@ -41,7 +41,7 @@ It will then create a repository called `todolist` in the given repositories pat
 ## bdd- attributes
 | Attribute  | Required  | Comment |
 |---|---|---|
-| bdd-repo  | optional  | The repo the include should be committed to. Optional when option `--reponame` is given |
+| bdd-repo  | optional  | The repo the include should be committed to. Optional when option `--reponame` is given. `bdd-repo` overrides any given `--reponame` |
 | bdd-filename  | required  | The filename (including path) in the repo |
 | bdd-commit-msg  | optional  | When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit  |
 | bdd-tag  | optional  |  When it encounters a number of consecutive identical tags, a tag will be generated for the last commit |
