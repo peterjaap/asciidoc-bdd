@@ -29,6 +29,10 @@ class BuildCommand extends Command
      * @var int
      */
     protected $includesFound;
+    /**
+     * @var bool
+     */
+    protected $firstRun = true;
 
     public function handle()
     {
@@ -53,10 +57,12 @@ class BuildCommand extends Command
             // Copy the source file to the Git repository directory
             $this->copySourceToRepo($fileName, $repoName, $includeData);
             // Add/remove the file to/from the Git repository
-            $gitAction = $includeData['bdd-action'] ?: 'add';
+            $gitAction = $includeData['bdd-action'] ?? 'add';
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
             // Process commit messages and tags
             $this->processCommitMsgTag($includeData);
+            // Wait one second to create unique timestamps
+            sleep(1);
         }
 
         return 0;
@@ -71,22 +77,20 @@ class BuildCommand extends Command
     private function parseIncludeDirectives($includes)
     {
         $data = [];
-        foreach ($includes[1] as $includePath)
+        foreach ($includes[1] as $key => $includePath)
         {
-            $attributeLists = $includes[2];
-            foreach ($attributeLists as $attributeList) {
-                $attributes = [];
-                $attributeStrings = explode(',', $attributeList);
-                foreach ($attributeStrings as $attributeString) {
-                    list($key,$value) = explode('=', $attributeString);
-                    $attributes[$key] = $value;
-                }
-                $attributes = array_map(function ($attribute) {
-                    return trim($attribute, '"');
-                }, $attributes);
-                $attributes['bdd-repo'] = $attributes['bdd-repo'] ?: $this->option('reponame');
-                $data[$includePath] = $attributes;
+            $attributeList = $includes[2][$key];
+            $attributes = [];
+            $attributeStrings = explode(',', $attributeList);
+            foreach ($attributeStrings as $attributeString) {
+                list($key,$value) = explode('=', $attributeString);
+                $attributes[$key] = $value;
             }
+            $attributes = array_map(function ($attribute) {
+                return trim($attribute, '"');
+            }, $attributes);
+            $attributes['bdd-repo'] = $attributes['bdd-repo'] ?: $this->option('reponame');
+            $data[$includePath] = $attributes;
         }
 
         return $data;
@@ -104,7 +108,11 @@ class BuildCommand extends Command
         $process->setWorkingDirectory($this->reposDir . '/' . $repoName);
         $process->run();
 
-        $this->line($process->getOutput());
+        if ($process->getErrorOutput()) {
+            $this->error($process->getErrorOutput());
+        } elseif ($process->getOutput()) {
+            $this->line($process->getOutput());
+        }
     }
 
     /**
@@ -119,7 +127,16 @@ class BuildCommand extends Command
         }
         if (!file_exists($this->reposDir . '/' . $repoName . '/.git')) {
             $this->executeOnRepo($repoName, ['git', 'init']);
+        } elseif ($this->firstRun) {
+            $this->warn($repoName . ' repository already initialized.');
+            if ($this->confirm('Drop repo and build again?', true)) {
+                $process = new Process(['rm', '-rf', $this->reposDir . '/' . $repoName]);
+                $process->run();
+                mkdir($this->reposDir . '/' . $repoName, 0755, true);
+                $this->executeOnRepo($repoName, ['git', 'init']);
+            }
         }
+        $this->firstRun = false;
     }
 
     /**
@@ -150,21 +167,16 @@ class BuildCommand extends Command
     private function processCommitMsgTag($includeData)
     {
         $repoName = $includeData['bdd-repo'];
-        if (
-            $includeData['bdd-commit-msg'] !== $this->lastCommitMessage
-            && (!is_null($this->lastCommitMessage) || $this->includesFound === 1)
-        ) {
+        if ($includeData['bdd-commit-msg'] !== $this->lastCommitMessage) {
+            $this->info('Committing ' . $includeData['bdd-filename'] . ' with commit message ' . $includeData['bdd-commit-msg']);
             // Found commit message differs from last; commit it
             $this->executeOnRepo($repoName, ['git','commit','-m',$includeData['bdd-commit-msg']]);
         }
 
-        if (
-            $includeData['bdd-tag'] !== $this->lastTag
-            && (!is_null($this->lastCommitMessage) || $this->includesFound === 1)
-        ) {
+        if ($includeData['bdd-tag'] !== $this->lastTag) {
             // Found tag differs from last; tag it
             $this->executeOnRepo($repoName, ['git','tag','-a',$includeData['bdd-tag'],'-m',$includeData['bdd-tag']]);
-            $this->line('Tag ' . $includeData['bdd-tag'] . ' created');
+            $this->info('Tag ' . $includeData['bdd-tag'] . ' created');
         }
 
         // Save the last commit-msg and tag in a property for later retrieval
