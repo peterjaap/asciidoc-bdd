@@ -59,10 +59,10 @@ class BuildCommand extends Command
             // Add/remove the file to/from the Git repository
             $gitAction = $includeData['bdd-action'] ?? 'add';
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
-            // Process commit messages and tags
-            $this->processCommitMsg($includeData);
             // Process tags
             $this->processTags($includeData);
+            // Process commit message
+            $this->processCommitMsg($includeData);
             // Wait one second to create unique timestamps
             sleep(1);
         }
@@ -155,7 +155,7 @@ class BuildCommand extends Command
     {
         $bookPath = $this->bookDir . '/' . $fileName;
         $repoPath = $this->reposDir . '/' . $repoName . '/' . $includeData['bdd-filename'];
-        $newDirectory = dirname($fileName);
+        $newDirectory = dirname($repoPath);
         // Create directory recursively if it doesn't exist
         if (!file_exists($newDirectory)) {
             mkdir($newDirectory, 0755, true);
