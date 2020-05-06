@@ -46,6 +46,7 @@ It will then create a repository called `todolist` in the given repositories pat
 | bdd-commit-msg  | optional  | When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit  |
 | bdd-tag  | optional  |  When it encounters a number of consecutive identical tags, a tag will be generated for the last commit |
 | bdd-action | optional | The default git command is `add`. If you want to remove a file from the Git repo, use `bdd-action=rm` | 
+| tags / bdd-include-tags | optional | Using [Asciidoc's region tags](https://github.com/asciidoctor/asciidoctor.org/blob/master/docs/_includes/include-lines-tags.adoc#by-tagged-regions), allows us to filter processed files based on include tags. Given `tags` can be overruled by `bdd-include-tags` | 
 
 Output:
 

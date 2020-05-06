@@ -160,7 +160,13 @@ class BuildCommand extends Command
         if (!file_exists($newDirectory)) {
             mkdir($newDirectory, 0755, true);
         }
-        copy($bookPath, $repoPath);
+
+        $filteredContent = $this->parseIncludeTags($bookPath, $includeData);
+        if ($filteredContent) {
+            file_put_contents($repoPath, $filteredContent);
+        } else {
+            copy($bookPath, $repoPath);
+        }
     }
 
     /**
@@ -200,6 +206,57 @@ class BuildCommand extends Command
 
         // Save the last commit-msg and tag in a property for later retrieval
         $this->lastCommitMessage = $includeData['bdd-commit-msg'];
+    }
+
+    /**
+     * @param string $bookPath
+     * @param $includeData
+     *
+     * Parse an include block's tag attributes - see https://github.com/asciidoctor/asciidoctor.org/blob/master/docs/_includes/include-lines-tags.adoc
+     */
+    private function parseIncludeTags(string $bookPath, $includeData)
+    {
+        if (!isset($includeData['bdd-include-tags']) && !isset($includeData['tags'])) {
+            return false;
+        }
+
+        $includeTags = $includeData['bdd-include-tags'] ?? $includeData['tags'];
+        $includeTags = array_map('trim', (explode(';', $includeTags)));
+
+        $parsedCode = '';
+        $tagName = false;
+        $tokens = token_get_all(file_get_contents($bookPath));
+        foreach ($tokens as $token) {
+            if (!is_array($token) && in_array($tagName, $includeTags)) {
+                $parsedCode .= $token;
+                continue;
+            }
+
+            list ($id, $content) = $token;
+            if (stripos($content, '// tag::') !== false) {
+                if ($tagName !== false) {
+                    throw new \Exception('Previous tag ' . $tagName . ' has not been closed!');
+                }
+                $tagName = substr(trim($content), strlen('// tag::'), -2);
+                continue;
+            }
+
+            if (stripos($content, '// end::') !== false) {
+                $endTagName = substr(trim($content), strlen('// end::'), -2);
+                if ($tagName === $endTagName) {
+                    $tagName = false;
+                }
+                continue;
+            }
+
+            if (!$tagName) {
+                $parsedCode .= $content;
+            } elseif ($tagName && in_array($tagName, $includeTags)) {
+                $parsedCode .= $content;
+            }
+        }
+
+        return $parsedCode;
     }
 
 }
