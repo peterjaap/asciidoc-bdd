@@ -50,7 +50,8 @@ class BuildCommand extends Command
         $this->includesFound = count($includes);
         $this->line('Found ' . $this->includesFound . ' includes to process');
 
-        foreach ($includes as $fileName => $includeData) {
+        foreach ($includes as $includeData) {
+            $fileName = $includeData['include-path'];
             $repoName = $includeData['bdd-repo'];
             // Create a new Git repo if it doesn't exist in the reposdir
             $this->createRepo($repoName);
@@ -97,7 +98,8 @@ class BuildCommand extends Command
                 return trim($attribute, '"');
             }, $attributes);
             $attributes['bdd-repo'] = $attributes['bdd-repo'] ?: $this->option('reponame');
-            $data[$includePath] = $attributes;
+            $attributes['include-path'] = $includePath;
+            $data[] = $attributes;
         }
 
         return $data;
