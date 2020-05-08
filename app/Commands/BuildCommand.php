@@ -87,7 +87,7 @@ class BuildCommand extends Command
         {
             $attributeList = $includes[2][$key];
             $attributes = [];
-            $attributeStrings = explode(',', $attributeList);
+            $attributeStrings = preg_split('/,(?=([^\"]*\"[^\"]*\")*[^\"]*$)/', $attributeList);
             foreach ($attributeStrings as $attributeString) {
                 list($key,$value) = explode('=', $attributeString);
                 $attributes[$key] = $value;
