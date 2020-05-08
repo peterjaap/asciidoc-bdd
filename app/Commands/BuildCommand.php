@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame=}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -135,7 +135,7 @@ class BuildCommand extends Command
             $this->executeOnRepo($repoName, ['git', 'init']);
         } elseif ($this->firstRun) {
             $this->warn($repoName . ' repository already initialized.');
-            if ($this->confirm('Drop repo and build again?', true)) {
+            if ($this->confirm('Drop repo and build again?', $this->option('drop'))) {
                 $process = new Process(['rm', '-rf', $this->reposDir . '/' . $repoName]);
                 $process->run();
                 mkdir($this->reposDir . '/' . $repoName, 0755, true);
