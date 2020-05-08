@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Process\Process;
 
@@ -196,14 +197,19 @@ class BuildCommand extends Command
     private function processCommitMsg($includeData)
     {
         $repoName = $includeData['bdd-repo'];
-        if ($includeData['bdd-commit-msg'] !== $this->lastCommitMessage) {
+        $commitMsg = $includeData['bdd-commit-msg'];
+        if (isset($includeData['bdd-tag']) && Str::startsWith($includeData['bdd-tag'], 'chapter-')) {
+            $tag = Str::replaceFirst('chapter-','Chapter ', $includeData['bdd-tag']);
+            $commitMsg = $tag . ' - ' . $commitMsg;
+        }
+        if ($commitMsg !== $this->lastCommitMessage) {
             // Found commit message differs from last; commit it
-            $this->info('Committing ' . $includeData['bdd-filename'] . ' with commit message ' . $includeData['bdd-commit-msg']);
-            $this->executeOnRepo($repoName, ['git','commit','-m',$includeData['bdd-commit-msg']]);
+            $this->info('Committing ' . $includeData['bdd-filename'] . ' with commit message ' . $commitMsg);
+            $this->executeOnRepo($repoName, ['git','commit','-m', $commitMsg]);
         }
 
         // Save the last commit-msg and tag in a property for later retrieval
-        $this->lastCommitMessage = $includeData['bdd-commit-msg'];
+        $this->lastCommitMessage = $commitMsg;
     }
 
     /**
