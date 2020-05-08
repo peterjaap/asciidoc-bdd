@@ -7,7 +7,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -26,10 +26,6 @@ class BuildCommand extends Command
      */
     protected $lastTag;
     /**
-     * @var int
-     */
-    protected $includesFound;
-    /**
      * @var bool
      */
     protected $firstRun = true;
@@ -47,12 +43,13 @@ class BuildCommand extends Command
             $includes = array_merge($includes, $this->parseIncludeDirectives($includeLines));
         }
 
-        $this->includesFound = count($includes);
-        $this->line('Found ' . $this->includesFound . ' includes to process');
-
         foreach ($includes as $includeData) {
             $fileName = $includeData['include-path'];
             $repoName = $includeData['bdd-repo'];
+            // If reponame is given, only process includes for that repo
+            if ($this->option('reponame') !== NULL && $repoName !== $this->option('reponame')) {
+                continue;
+            }
             // Create a new Git repo if it doesn't exist in the reposdir
             $this->createRepo($repoName);
             // Copy the source file to the Git repository directory
@@ -69,7 +66,7 @@ class BuildCommand extends Command
         }
 
         // Process final tag, forcing creation
-        if (isset($includeData)) {
+        if (isset($includeData) && $this->lastTag) {
             $this->processTags($includeData, true);
         }
 
@@ -97,7 +94,6 @@ class BuildCommand extends Command
             $attributes = array_map(function ($attribute) {
                 return trim($attribute, '"');
             }, $attributes);
-            $attributes['bdd-repo'] = $attributes['bdd-repo'] ?: $this->option('reponame');
             $attributes['include-path'] = $includePath;
             $data[] = $attributes;
         }
