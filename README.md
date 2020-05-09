@@ -18,7 +18,7 @@ include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-c
 ----
 ```
 
-If you wish to run a shell command instead of committing just one file, you can leave out the `include::` directive;
+If you wish to run a shell command instead of committing just one file, you can leave out the `include::` directive and add a `bdd-command` attribute;
 
 ```
 Some book content...
