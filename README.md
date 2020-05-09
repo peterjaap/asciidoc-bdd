@@ -6,6 +6,8 @@ This is for book authors who are writing a technical book in [Asciidoc](http://a
 ## What does it do?
 This tool can read your book (in its Asciidoc source format) and extract file includes that contain `bdd-` attributes. It can then build up a Git repo with tags and commits. The repository can be rebuilt from the ground up, ensuring a logical order through the tags.
 
+You can also pass the `--generate-diffs` flag when running the command. When a file is committed that already exists in the repository, a diff file for that file will be generated. If a diff file already exists, the filename (before the `.diff` extension) will be suffixed with an incrementing number.
+
 ## Configuration
 You have to use the Asciidoc attribute syntax to tell this tool how to process the include.
 

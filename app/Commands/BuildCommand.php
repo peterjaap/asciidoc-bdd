@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -63,8 +63,10 @@ class BuildCommand extends Command
                 $this->warn('No bdd-filename or bdd-command attribute found; skipping.');
                 continue;
             }
-            // Add/remove the file to/from the Git repository
             $gitAction = $includeData['bdd-action'] ?? 'add';
+            // Generate diff if --generate-diffs is passed
+            $this->generateDiff($gitAction, $includeData);
+            // Add/remove the file to/from the Git repository
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
             // Process tags
             $this->processTags($includeData);
@@ -117,7 +119,7 @@ class BuildCommand extends Command
      *
      * Executes an arbitrary command in the given repo directory
      */
-    private function executeOnRepo(string $repoName, $command)
+    private function executeOnRepo(string $repoName, $command): string
     {
         if (is_array($command)) {
             $process = new Process($command);
@@ -129,9 +131,13 @@ class BuildCommand extends Command
 
         if ($process->getErrorOutput()) {
             $this->error($process->getErrorOutput());
+            return $process->getErrorOutput();
         } elseif ($process->getOutput()) {
             $this->line($process->getOutput());
+            return $process->getOutput();
         }
+
+        return '';
     }
 
     /**
@@ -274,6 +280,27 @@ class BuildCommand extends Command
         }
 
         return $parsedCode;
+    }
+
+    private function generateDiff(string $gitAction, $includeData) : void
+    {
+        if (!$this->option('generate-diffs')) {
+            return;
+        }
+        $repoName = $includeData['bdd-repo'];
+        $fileName = $includeData['bdd-filename'];
+        $repoPath = $this->reposDir . '/' . $repoName . '/' . $fileName;
+        $bookPath = $this->bookDir . '/' . $includeData['include-path'];
+        if ($gitAction === 'add' AND file_exists($repoPath)) {
+            $result = $this->executeOnRepo($repoName, ['git','diff', $fileName]);
+            $diffFilename = $bookPath . '.diff';
+            $increment = 1;
+            do {
+                $diffFilename = $bookPath . '-' . $increment . '.diff';
+            } while(file_exists($diffFilename));
+            var_dump($diffFilename);
+            file_put_contents($diffFilename, $result);
+        }
     }
 
 }
