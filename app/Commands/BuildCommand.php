@@ -40,8 +40,8 @@ class BuildCommand extends Command
         $adocs = glob($this->bookDir . '/*.adoc');
         $includes = [];
         foreach ($adocs as $adoc) {
-            preg_match_all('#include::(.*)\[(.*bdd.*)\]#', file_get_contents($adoc), $includeLines);
-            $includes = array_merge($includes, $this->parseIncludeDirectives($includeLines));
+            preg_match_all('#(.*)\[(.*bdd-.*)\]#', file_get_contents($adoc), $lines);
+            $includes = array_merge($includes, $this->parseBddTags($lines));
         }
 
         foreach ($includes as $includeData) {
@@ -53,8 +53,16 @@ class BuildCommand extends Command
             }
             // Create a new Git repo if it doesn't exist in the reposdir
             $this->createRepo($repoName);
-            // Copy the source file to the Git repository directory
-            $this->copySourceToRepo($fileName, $repoName, $includeData);
+            if (isset($includeData['bdd-command'])) {
+                // Execute the command
+                $this->executeOnRepo($repoName, $includeData['bdd-command']);
+            } elseif (isset($includeData['bdd-filename'])) {
+                // Copy the source file to the Git repository directory
+                $this->copySourceToRepo($fileName, $repoName, $includeData);
+            } else {
+                $this->warn('No bdd-filename or bdd-command attribute found; skipping.');
+                continue;
+            }
             // Add/remove the file to/from the Git repository
             $gitAction = $includeData['bdd-action'] ?? 'add';
             $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
@@ -78,13 +86,14 @@ class BuildCommand extends Command
      * @param $includes
      * @return array
      *
-     * Parse the Aciidoc include:: directives and return an array of all bdd-* attributes
+     * Parse the bdd-* attribute and return an array of all bdd-* attributes
      */
-    private function parseIncludeDirectives($includes)
+    private function parseBddTags($includes)
     {
         $data = [];
         foreach ($includes[1] as $key => $includePath)
         {
+            $includePath = Str::after($includePath, 'include::');
             $attributeList = $includes[2][$key];
             $attributes = [];
             $attributeStrings = preg_split('/,(?=([^\"]*\"[^\"]*\")*[^\"]*$)/', $attributeList);
@@ -104,13 +113,17 @@ class BuildCommand extends Command
 
     /**
      * @param string $repoName
-     * @param array $command
+     * @param string|array $command
      *
      * Executes an arbitrary command in the given repo directory
      */
-    private function executeOnRepo(string $repoName, array $command)
+    private function executeOnRepo(string $repoName, $command)
     {
-        $process = new Process($command);
+        if (is_array($command)) {
+            $process = new Process($command);
+        } elseif (is_string($command)) {
+            $process = Process::fromShellCommandline($command);
+        }
         $process->setWorkingDirectory($this->reposDir . '/' . $repoName);
         $process->run();
 

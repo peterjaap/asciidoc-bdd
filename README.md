@@ -18,6 +18,16 @@ include::Mycode/composer.json[bdd-repo=todolist,bdd-filename=composer.json,bdd-c
 ----
 ```
 
+If you wish to run a shell command instead of committing just one file, you can leave out the `include::` directive;
+
+```
+Some book content...
+[bdd-repo=todolist,bdd-command="composer require vendor/package",bdd-commit-msg="Installed vendor/package",bdd-tag=chapter-7.1]
+Some morebook content...
+```
+
+After a `bdd-command` is executed, all files in the working dir are added to the commit (`git add .`).
+
 Run the tool like this;
 
 ```
@@ -45,6 +55,7 @@ It will then create a repository called `todolist` in the given repositories pat
 |---|---|---|
 | bdd-repo  | optional  | The repo the include should be committed to. |
 | bdd-filename  | required  | The filename (including path) in the repo |
+| bdd-command | optional | An arbitrary command to be executed on the shell, before committing files (instead of copying a file to the repo) | 
 | bdd-commit-msg  | optional  | When it encounters a number of consecutive identical commit messages, these files will be commited under the same commit  |
 | bdd-tag  | optional  |  When it encounters a number of consecutive identical tags, a tag will be generated for the last commit |
 | bdd-action | optional | The default git command is `add`. If you want to remove a file from the Git repo, use `bdd-action=rm` | 
