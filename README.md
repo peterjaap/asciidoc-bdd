@@ -22,11 +22,11 @@ If you wish to run a shell command instead of committing just one file, you can 
 
 ```
 Some book content...
-[bdd-repo=todolist,bdd-command="composer require vendor/package",bdd-commit-msg="Installed vendor/package",bdd-tag=chapter-7.1]
+[bdd-repo=todolist,bdd-command="composer require vendor/package",bdd-filename=".",bdd-commit-msg="Installed vendor/package",bdd-tag=chapter-7.1]
 Some morebook content...
 ```
 
-After a `bdd-command` is executed, all files in the working dir are added to the commit (`git add .`).
+After a `bdd-command` is executed, the bdd-filename value is added to the commit (use `.` as a value to add all new files).
 
 Run the tool like this;
 
