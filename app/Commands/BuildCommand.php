@@ -53,8 +53,10 @@ class BuildCommand extends Command
             }
             // Create a new Git repo if it doesn't exist in the reposdir
             $this->createRepo($repoName);
+            $includeData['bdd-action'] = $includeData['bdd-action'] ?? 'add';
             if (isset($includeData['bdd-command'])) {
                 // Execute the command
+                $this->line('Executing ' . $includeData['bdd-command']);
                 $this->executeOnRepo($repoName, $includeData['bdd-command']);
             } elseif (isset($includeData['bdd-filename'])) {
                 // Copy the source file to the Git repository directory
@@ -64,8 +66,11 @@ class BuildCommand extends Command
                 continue;
             }
             // Add/remove the file to/from the Git repository
-            $gitAction = $includeData['bdd-action'] ?? 'add';
-            $this->executeOnRepo($repoName, ['git', $gitAction, $includeData['bdd-filename']]);
+            if (stripos($includeData['bdd-filename'], ' ') !== false) {
+                $this->executeOnRepo($repoName, 'git' . ' ' . $includeData['bdd-action'] . ' ' . $includeData['bdd-filename']);
+            } else {
+                $this->executeOnRepo($repoName, ['git', $includeData['bdd-action'], $includeData['bdd-filename']]);
+            }
             // Process tags
             $this->processTags($includeData);
             // Process commit message
@@ -165,6 +170,9 @@ class BuildCommand extends Command
      */
     protected function copySourceToRepo($fileName, $repoName, $includeData): void
     {
+        if ($includeData['bdd-action'] !== 'add') {
+            return;
+        }
         $bookPath = $this->bookDir . '/' . $fileName;
         $repoPath = $this->reposDir . '/' . $repoName . '/' . $includeData['bdd-filename'];
         $newDirectory = dirname($repoPath);
