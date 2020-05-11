@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -41,10 +41,10 @@ class BuildCommand extends Command
         $includes = [];
         foreach ($adocs as $adoc) {
             preg_match_all('#(.*)\[(.*bdd-.*)\]#', file_get_contents($adoc), $lines);
-            $includes = array_merge($includes, $this->parseBddTags($lines));
+            $includes = array_merge($includes, $this->parseBddTags($lines, $adoc));
         }
 
-        foreach ($includes as $includeData) {
+        foreach ($includes as $identifier => $includeData) {
             $fileName = $includeData['include-path'];
             $repoName = $includeData['bdd-repo'];
             // If reponame is given, only process includes for that repo
@@ -71,6 +71,8 @@ class BuildCommand extends Command
             } else {
                 $this->executeOnRepo($repoName, ['git', $includeData['bdd-action'], $includeData['bdd-filename']]);
             }
+            // Generate diff
+            $this->generateDiff($includeData, $identifier);
             // Process tags
             $this->processTags($includeData);
             // Process commit message
@@ -93,12 +95,13 @@ class BuildCommand extends Command
      *
      * Parse the bdd-* attribute and return an array of all bdd-* attributes
      */
-    private function parseBddTags($includes)
+    private function parseBddTags($includes, $adoc)
     {
         $data = [];
         foreach ($includes[1] as $key => $includePath)
         {
             $includePath = Str::after($includePath, 'include::');
+            $lineContent = $includes[0][$key];
             $attributeList = $includes[2][$key];
             $attributes = [];
             $attributeStrings = preg_split('/,(?=([^\"]*\"[^\"]*\")*[^\"]*$)/', $attributeList);
@@ -110,7 +113,8 @@ class BuildCommand extends Command
                 return trim($attribute, '"');
             }, $attributes);
             $attributes['include-path'] = $includePath;
-            $data[] = $attributes;
+            $lineNumber = $this->findLineNumber($adoc, $lineContent);
+            $data[$adoc.':'.$lineNumber] = $attributes;
         }
 
         return $data;
@@ -121,8 +125,9 @@ class BuildCommand extends Command
      * @param string|array $command
      *
      * Executes an arbitrary command in the given repo directory
+     * @param bool $return
      */
-    private function executeOnRepo(string $repoName, $command)
+    private function executeOnRepo(string $repoName, $command, $return = false)
     {
         if (is_array($command)) {
             $process = new Process($command);
@@ -133,9 +138,9 @@ class BuildCommand extends Command
         $process->run();
 
         if ($process->getErrorOutput()) {
-            $this->error($process->getErrorOutput());
+            if (!$return) $this->error($process->getErrorOutput()); else return $process->getErrorOutput();
         } elseif ($process->getOutput()) {
-            $this->line($process->getOutput());
+            if (!$return) $this->line($process->getOutput()); else return $process->getOutput();
         }
     }
 
@@ -282,6 +287,45 @@ class BuildCommand extends Command
         }
 
         return $parsedCode;
+    }
+
+    private function generateDiff($includeData, $identifier) : void
+    {
+        if (!$this->option('generate-diffs')) {
+            return;
+        }
+
+        $latestDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git','diff','--no-prefix','-U1000','HEAD~1'], true);
+        if (stripos($latestDiff, '/dev/null') !== false) {
+            // New file, do nothing
+            return;
+        }
+
+        list ($file, $lineNumber) = explode(':', $identifier);
+
+        $newFileContent = $this->replaceLine($file, $lineNumber, $latestDiff);
+
+        file_put_contents($file, $newFileContent);
+    }
+
+    private function findLineNumber($adoc, $content)
+    {
+        $lines = explode(PHP_EOL, file_get_contents($adoc));
+        $lineNumber = array_search($content, $lines);
+
+        if (!is_int($lineNumber)) {
+            throw new \Exception('Line number could not be found for ' . $content);
+        }
+
+        return $lineNumber+1;
+    }
+
+    private function replaceLine($adoc, string $lineNumber, $newLine)
+    {
+        $lines = explode(PHP_EOL, file_get_contents($adoc));
+        $lines[$lineNumber] = $newLine;
+
+        return implode(PHP_EOL, $lines);
     }
 
 }
