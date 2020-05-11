@@ -323,7 +323,7 @@ class BuildCommand extends Command
     private function replaceLine($adoc, string $lineNumber, $newLine)
     {
         $lines = explode(PHP_EOL, file_get_contents($adoc));
-        $lines[$lineNumber] = $newLine;
+        $lines[$lineNumber-1] = $newLine;
 
         return implode(PHP_EOL, $lines);
     }
