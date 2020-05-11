@@ -71,12 +71,12 @@ class BuildCommand extends Command
             } else {
                 $this->executeOnRepo($repoName, ['git', $includeData['bdd-action'], $includeData['bdd-filename']]);
             }
-            // Generate diff
-            $this->generateDiff($includeData, $identifier);
             // Process tags
             $this->processTags($includeData);
             // Process commit message
             $this->processCommitMsg($includeData);
+            // Generate diff
+            $this->generateDiff($includeData, $identifier);
             // Wait one second to create unique timestamps
             sleep(1);
         }
@@ -125,9 +125,9 @@ class BuildCommand extends Command
      * @param string|array $command
      *
      * Executes an arbitrary command in the given repo directory
-     * @param bool $return
+     * @param bool $returnSuccessOutput
      */
-    private function executeOnRepo(string $repoName, $command, $return = false)
+    private function executeOnRepo(string $repoName, $command, $returnSuccessOutput = false)
     {
         if (is_array($command)) {
             $process = new Process($command);
@@ -138,9 +138,9 @@ class BuildCommand extends Command
         $process->run();
 
         if ($process->getErrorOutput()) {
-            if (!$return) $this->error($process->getErrorOutput()); else return $process->getErrorOutput();
+            $this->error($process->getErrorOutput());
         } elseif ($process->getOutput()) {
-            if (!$return) $this->line($process->getOutput()); else return $process->getOutput();
+            if (!$returnSuccessOutput) $this->line($process->getOutput()); else return $process->getOutput();
         }
     }
 
@@ -296,14 +296,17 @@ class BuildCommand extends Command
         }
 
         $latestDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git','diff','--no-prefix','-U1000','HEAD~1'], true);
-        if (stripos($latestDiff, '/dev/null') !== false) {
+        if (!$latestDiff || stripos($latestDiff, '/dev/null') !== false) {
             // New file, do nothing
             return;
         }
 
         list ($file, $lineNumber) = explode(':', $identifier);
 
-        $newFileContent = $this->replaceLine($file, $lineNumber, $latestDiff);
+        $diffFilename = $includeData['include-path'] . '.' . date('U') . '.diff';
+        file_put_contents($this->bookDir . '/' . $diffFilename, $latestDiff);
+
+        $newFileContent = $this->replaceLine($file, $lineNumber, 'include::' . $diffFilename . '[]');
 
         file_put_contents($file, $newFileContent);
     }
@@ -320,9 +323,9 @@ class BuildCommand extends Command
         return $lineNumber+1;
     }
 
-    private function replaceLine($adoc, string $lineNumber, $newLine)
+    private function replaceLine($file, string $lineNumber, $newLine)
     {
-        $lines = explode(PHP_EOL, file_get_contents($adoc));
+        $lines = explode(PHP_EOL, file_get_contents($file));
         $lines[$lineNumber-1] = $newLine;
 
         return implode(PHP_EOL, $lines);

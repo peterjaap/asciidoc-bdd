@@ -36,6 +36,8 @@ $ ./asciidoc-bdd build /path/to/your/asciidoc/files /path/to/repositories
 
 You can pass an optional `---reponame=` to only process includes for the given repo.
 
+Experimental: you can pass an optional `--generate-diffs` flag. This will generate a diff for each commit and store it next to the originally included file, suffixed with the timestamp and `.diff`. The original include will be replaced with this diff file included. CAUTION: this will alter the source code of your book (the `.adoc` files).
+
 This tool will then parse the `bdd-` attributes in all `*.adoc` files in the Asciidoc files dir, like this:
 
 ```
