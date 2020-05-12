@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs=} {--symlink-diffs}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -76,7 +76,7 @@ class BuildCommand extends Command
             // Process commit message
             $this->processCommitMsg($includeData);
             // Generate diff
-            $this->generateDiff($includeData, $identifier);
+            $this->generateDiff($includeData);
             // Wait one second to create unique timestamps
             sleep(1);
         }
@@ -101,7 +101,6 @@ class BuildCommand extends Command
         foreach ($includes[1] as $key => $includePath)
         {
             $includePath = Str::after($includePath, 'include::');
-            $lineContent = $includes[0][$key];
             $attributeList = $includes[2][$key];
             $attributes = [];
             $attributeStrings = preg_split('/,(?=([^\"]*\"[^\"]*\")*[^\"]*$)/', $attributeList);
@@ -113,8 +112,7 @@ class BuildCommand extends Command
                 return trim($attribute, '"');
             }, $attributes);
             $attributes['include-path'] = $includePath;
-            $lineNumber = $this->findLineNumber($adoc, $lineContent);
-            $data[$adoc.':'.$lineNumber] = $attributes;
+            $data[] = $attributes;
         }
 
         return $data;
@@ -289,46 +287,32 @@ class BuildCommand extends Command
         return $parsedCode;
     }
 
-    private function generateDiff($includeData, $identifier) : void
+    private function generateDiff($includeData) : void
     {
         if (!$this->option('generate-diffs')) {
             return;
         }
 
-        $latestDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git','diff','--no-prefix','-U1000','HEAD~1'], true);
+        $compactDiff = ['git', 'diff', '--no-prefix', 'HEAD~1'];
+        $fullDiff = ['git', 'diff', '--no-prefix', '-U1000', 'HEAD~1'];
+        $latestDiff = $this->executeOnRepo($includeData['bdd-repo'], $this->option('generate-diffs') === 'full' ? $fullDiff : $compactDiff, true);
         if (!$latestDiff || stripos($latestDiff, '/dev/null') !== false) {
             // New file, do nothing
             return;
         }
 
-        list ($file, $lineNumber) = explode(':', $identifier);
-
-        $diffFilename = $includeData['include-path'] . '.' . date('U') . '.diff';
+        // Save diff
+        $diffFilename = $includeData['include-path'] . '.' . date('U') . '.' . ($this->option('generate-diffs') === 'full' ? 'full' : 'compact') . '.diff';
         file_put_contents($this->bookDir . '/' . $diffFilename, $latestDiff);
 
-        $newFileContent = $this->replaceLine($file, $lineNumber, 'include::' . $diffFilename . '[]');
-
-        file_put_contents($file, $newFileContent);
-    }
-
-    private function findLineNumber($adoc, $content)
-    {
-        $lines = explode(PHP_EOL, file_get_contents($adoc));
-        $lineNumber = array_search($content, $lines);
-
-        if (!is_int($lineNumber)) {
-            throw new \Exception('Line number could not be found for ' . $content);
+        if ($this->option('symlink-diffs')) {
+            // Swap actual file with symlink to diff
+            $originalPath = $this->bookDir . '/' . $includeData['include-path'];
+            $sourcePath = $this->bookDir . '/' . $includeData['include-path'] . '.source';
+            $diffPath = $this->bookDir . '/' . $diffFilename;
+            (new Process(['mv', $originalPath, $sourcePath]))->run();
+            (new Process(['ln', '-rs', './'.$diffPath, './'.$originalPath]))->run();
         }
-
-        return $lineNumber+1;
-    }
-
-    private function replaceLine($file, string $lineNumber, $newLine)
-    {
-        $lines = explode(PHP_EOL, file_get_contents($file));
-        $lines[$lineNumber-1] = $newLine;
-
-        return implode(PHP_EOL, $lines);
     }
 
 }
