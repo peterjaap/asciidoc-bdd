@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class BuildCommand extends Command
 {
-    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs=} {--symlink-diffs}';
+    protected $signature = 'build {bookdir} {reposdir} {--reponame=} {--drop} {--generate-diffs}';
     protected $description = 'Build a Github repo';
     /**
      * @var array|string|null
@@ -293,26 +293,22 @@ class BuildCommand extends Command
             return;
         }
 
-        $compactDiff = ['git', 'diff', '--no-prefix', 'HEAD~1'];
-        $fullDiff = ['git', 'diff', '--no-prefix', '-U1000', 'HEAD~1'];
-        $latestDiff = $this->executeOnRepo($includeData['bdd-repo'], $this->option('generate-diffs') === 'full' ? $fullDiff : $compactDiff, true);
-        if (!$latestDiff || stripos($latestDiff, '/dev/null') !== false) {
+        $compactDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git', 'diff', '--no-prefix', 'HEAD~1'], true);
+        $fullDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git', 'diff', '--no-prefix', '-U1000', 'HEAD~1'], true);
+        if (!$compactDiff || stripos($compactDiff, '/dev/null') !== false) {
             // New file, do nothing
             return;
         }
 
         // Save diff
-        $diffFilename = $includeData['include-path'] . '.' . date('U') . '.' . ($this->option('generate-diffs') === 'full' ? 'full' : 'compact') . '.diff';
-        file_put_contents($this->bookDir . '/' . $diffFilename, $latestDiff);
+        $fullDiffFilename = str_replace('Code/', 'Full/', $includeData['include-path']);
+        $compactDiffFilename = str_replace('Code/', 'Compact/', $includeData['include-path']);
 
-        if ($this->option('symlink-diffs')) {
-            // Swap actual file with symlink to diff
-            $originalPath = $this->bookDir . '/' . $includeData['include-path'];
-            $sourcePath = $this->bookDir . '/' . $includeData['include-path'] . '.source';
-            $diffPath = $this->bookDir . '/' . $diffFilename;
-            (new Process(['mv', $originalPath, $sourcePath]))->run();
-            (new Process(['ln', '-rs', './'.$diffPath, './'.$originalPath]))->run();
-        }
+        @mkdir(dirname($this->bookDir . '/' . $fullDiffFilename), 0777, true);
+        @mkdir(dirname($this->bookDir . '/' . $compactDiffFilename), 0777, true);
+
+        file_put_contents($this->bookDir . '/' . $fullDiffFilename, $fullDiff);
+        file_put_contents($this->bookDir . '/' . $compactDiffFilename, $compactDiff);
     }
 
 }
