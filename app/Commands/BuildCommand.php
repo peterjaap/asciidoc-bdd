@@ -293,6 +293,10 @@ class BuildCommand extends Command
             return;
         }
 
+        if (!$includeData['include-path']) {
+            return;
+        }
+
         $compactDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git', 'diff', '--no-prefix', 'HEAD~1'], true);
         $fullDiff = $this->executeOnRepo($includeData['bdd-repo'], ['git', 'diff', '--no-prefix', '-U1000', 'HEAD~1'], true);
         if (!$compactDiff || stripos($compactDiff, '/dev/null') !== false) {
